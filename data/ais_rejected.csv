@@ -1,0 +1,1 @@
+sentence_type,country,msg_type,repeat,mmsi,status,turn,speed,accuracy,lon,lat,course,heading,second,maneuver,raim,radio,ais_version,imo,callsign,shipname,ship_type,to_bow,to_stern,to_port,to_starboard,epfd,month,day,hour,minute,draught,destination,dte,is_valid,validation_error,flag_fake_mmsi
