@@ -200,10 +200,10 @@ elif page == "Predict":
     col1, col2, col3 = st.columns(3)
     with col1:
         mmsi = st.text_input("MMSI", value="987654321")
-        speed = st.slider("Speed (knots)", 0.0, 50.0, 12.0)
-        course = st.slider("Course (degrees)", 0.0, 360.0, 155.0)
+        speed = st.number_input("Speed (knots)", 0.0, 102.2, 12.0, step=0.1)
+        course = st.number_input("Course (degrees)", 0.0, 360.0, 155.0, step=0.1)
     with col2:
-        heading = st.slider("Heading", 0, 511, 153)
+        heading = st.number_input("Heading", 0, 511, 153, step=1)
         lat = st.number_input("Latitude", -90.0, 90.0, 14.41)
         lon = st.number_input("Longitude", -180.0, 180.0, 72.91)
     with col3:
