@@ -39,7 +39,7 @@ FEATURE_COLS = [
 st.sidebar.title("AIS Spoofing Detection")
 st.sidebar.markdown("Maritime vessel spoofing detector using ML + feature engineering")
 page = st.sidebar.radio("Navigate", [
-    "Overview", "Vessel Map", "Alerts", "Model Performance", "Predict"
+    "Overview", "Vessel Map", "Alerts", "Model Performance", "Predict", "Investigate"
 ])
 
 df = load_data()
@@ -243,3 +243,75 @@ elif page == "Predict":
         st.subheader("Feature values used")
         st.dataframe(features.T.rename(columns={0: "value"}),
                      use_container_width=True)
+        
+elif page == "Investigate":
+    import sys
+    from pathlib import Path
+    sys.path.append(str(Path(__file__).parent.parent / "src"))
+    from agents.investigator import investigate_vessel
+
+    st.title("AI Investigation Agent")
+    st.markdown("LangGraph-powered agentic investigation with RAG-backed regulatory citations")
+
+    alerts = df[df["xgb_pred"] == 1].sort_values("xgb_prob", ascending=False).reset_index(drop=True)
+
+    st.markdown(f"**{len(alerts):,} flagged vessels available for investigation**")
+
+    st.subheader("Choose investigation mode")
+    mode = st.radio("Mode", ["Flagged vessels only", "All vessels"], horizontal=True)
+
+    if mode == "Flagged vessels only":
+        pool = df[df["xgb_pred"] == 1].sort_values("xgb_prob", ascending=False).reset_index(drop=True)
+    else:
+        pool = df.reset_index(drop=True)
+
+    mmsi_list = sorted(pool["mmsi"].astype(str).unique().tolist())
+    st.caption(f"{len(mmsi_list):,} vessels available in this mode")
+
+    selected_mmsi = st.selectbox(
+        "Select a vessel to investigate",
+        options=mmsi_list,
+        index=0
+    )
+
+    vessel_row = pool[pool["mmsi"].astype(str) == str(selected_mmsi)].iloc[0]
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("MMSI", selected_mmsi)
+    col2.metric("Country", vessel_row["country"])
+    col3.metric("Speed", f"{vessel_row['speed']:.1f} kn")
+    col4.metric("Spoofing Score", f"{int(vessel_row['spoofing_score'])}/5")
+
+    st.subheader("Active flags for this vessel")
+    flags = {
+        "fake_mmsi": bool(vessel_row["flag_fake_mmsi"]),
+        "aivdo_unknown": bool(vessel_row["flag_aivdo_unknown"]),
+        "heading_cog_mismatch": bool(vessel_row["flag_heading_cog_mismatch"]),
+        "anchored_moving": bool(vessel_row["flag_anchored_moving"]),
+        "position_jump": False
+    }
+    active = [k.replace("_", " ").title() for k, v in flags.items() if v]
+    if active:
+        for f in active:
+            st.markdown(f"- 🚩 {f}")
+    else:
+        st.markdown("- No specific flags (low-confidence ML detection)")
+
+    if st.button("Run AI Investigation", type="primary"):
+        with st.spinner("LangGraph agent investigating... querying RAG knowledge base..."):
+            report = investigate_vessel(
+                mmsi=str(selected_mmsi),
+                flags=flags,
+                score=int(vessel_row["spoofing_score"]),
+                country=str(vessel_row["country"]),
+                speed=float(vessel_row["speed"])
+            )
+
+        st.success("Investigation complete!")
+        st.code(report, language=None)
+
+        st.download_button(
+            "Download Report",
+            report,
+            file_name=f"investigation_{selected_mmsi}.txt"
+        )
