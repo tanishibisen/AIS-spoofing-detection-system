@@ -37,7 +37,7 @@ FEATURE_COLS = [
 ]
 
 st.sidebar.title("AIS Spoofing Detection")
-st.sidebar.markdown("Maritime vessel spoofing detector using ML + feature engineering")
+st.sidebar.markdown("Maritime vessel spoofing detector")
 page = st.sidebar.radio("Navigate", [
     "Overview", "Vessel Map", "Alerts", "Model Performance", "Predict", "Investigate"
 ])
